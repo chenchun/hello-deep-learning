@@ -54,17 +54,20 @@ if __name__ == "__main__":
     #将这些值缩小至 0 到 1 之间，然后将其馈送到神经网络模型。为此，请将这些值除以 255。
     train_images = train_images / 255.0
     test_images = test_images / 255.0
+    train_images = train_images.reshape(-1, 28, 28, 1)
+    test_images = test_images.reshape(-1,28,28,1)
 
-    # print("观察几个image")
-    # plt.figure(figsize=(10,10))
-    # for i in range(25):
-    #     plt.subplot(5,5,i+1)
-    #     plt.xticks([])
-    #     plt.yticks([])
-    #     plt.grid(False)
-    #     plt.imshow(train_images[i], cmap=plt.cm.binary)
-    #     plt.xlabel(class_names[train_labels[i]])
-    # plt.show()
+    print(train_images.shape)
+    print("观察几个image")
+    plt.figure(figsize=(10,10))
+    for i in range(25):
+        plt.subplot(5,5,i+1)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(False)
+        plt.imshow(train_images[i], cmap=plt.cm.binary)
+        plt.xlabel(class_names[train_labels[i]])
+    plt.show()
 
     # model = tf.keras.Sequential([
     #     tf.keras.layers.Flatten(input_shape=(28, 28)),
@@ -73,12 +76,18 @@ if __name__ == "__main__":
     # ])
 
     model = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(32, 5, input_shape=(28, 28, 1)),
+        tf.keras.layers.Conv2D(32, 3, input_shape=(28, 28, 1)),
+        tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=2, padding="same"),
+        tf.keras.layers.Conv2D(64, 3),
+        tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=2, padding="same"),
+        # tf.keras.layers.Conv2D(128, 3),
+        # tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=1),
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.Dense(10)
     ])
     print("进行训练...")
+    print(model.summary())
     model.compile(optimizer='adam',
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
