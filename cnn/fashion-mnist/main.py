@@ -1,5 +1,6 @@
 # TensorFlow and tf.keras
 import tensorflow as tf
+from tensorflow.keras.layers.experimental.preprocessing import RandomFlip, RandomRotation
 
 # Helper libraries
 import numpy as np
@@ -75,13 +76,25 @@ if __name__ == "__main__":
     #     tf.keras.layers.Dense(10)
     # ])
 
+    # model = tf.keras.Sequential([
+    #     tf.keras.layers.Conv2D(16, 5, input_shape=(28, 28, 1)),
+    #     tf.keras.layers.MaxPool2D(pool_size=(8, 8), strides=(2, 2), padding='same'),
+    #     tf.keras.layers.ReLU(),
+    #     tf.keras.layers.Conv2D(32, 5),
+    #     tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=(2, 2), padding='same'),
+    #     tf.keras.layers.Flatten(),
+    #     tf.keras.layers.Dense(128, activation='relu'),
+    #     tf.keras.layers.Dense(10)
+    # ])
+    input_shape = (28, 28, 1)
     model = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(32, 3, input_shape=(28, 28, 1)),
-        tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=2, padding="same"),
-        tf.keras.layers.Conv2D(64, 3),
-        tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=2, padding="same"),
-        # tf.keras.layers.Conv2D(128, 3),
-        # tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=1),
+        # RandomFlip('horizontal', input_shape=input_shape),
+        # RandomRotation(0.2),
+        tf.keras.layers.Conv2D(16, 3, input_shape=input_shape),
+        tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=(2, 2), padding='same'),
+        tf.keras.layers.Conv2D(32, 3),
+        tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=(2, 2), padding='same'),
+        tf.keras.layers.Dropout(.2),
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.Dense(10)
@@ -91,7 +104,7 @@ if __name__ == "__main__":
     model.compile(optimizer='adam',
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
-    model.fit(train_images, train_labels, epochs=10)
+    model.fit(train_images, train_labels, epochs=20)
     print("评估准确率...")
     test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
@@ -102,6 +115,7 @@ if __name__ == "__main__":
     print(predictions[0])
     print("分类:", class_names[np.argmax(predictions[0])])
 
+    print("Plot the first X test images, their predicted labels, and the true labels.")
     # Plot the first X test images, their predicted labels, and the true labels.
     # Color correct predictions in blue and incorrect predictions in red.
     num_rows = 5
