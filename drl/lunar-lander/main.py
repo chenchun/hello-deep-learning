@@ -31,12 +31,12 @@ NUM_STEPS_FOR_UPDATE = 4  # perform a learning update every C time steps
 # ## 4 - Load the Environment
 # We start by loading the `LunarLander-v2` environment from the `gym` library by using the `.make()` method. `LunarLander-v2` is the latest version of the Lunar Lander environment and you can read about its version history in the [Open AI Gym documentation](https://www.gymlibrary.dev/environments/box2d/lunar_lander/#version-history).
 
-env = gym.make('LunarLander-v2')
+env = gym.make('LunarLander-v2', render_mode="rgb_array")
 
 # Once we load the environment we use the `.reset()` method to reset the environment to the initial state. The lander starts at the top center of the environment and we can render the first frame of the environment by using the `.render()` method.
 
 env.reset()
-PIL.Image.fromarray(env.render(mode='rgb_array'))
+PIL.Image.fromarray(env.render())
 
 # In order to build our neural network later on we need to know the size of the state vector and the number of valid actions. We can get this information from our environment by using the `.observation_space.shape` and `action_space.n` methods, respectively.
 state_size = env.observation_space.shape
@@ -44,7 +44,7 @@ num_actions = env.action_space.n
 
 print('State Shape:', state_size)
 print('Number of actions:', num_actions)
-initial_state = env.reset()
+initial_state, _ = env.reset()
 
 # Once the environment is reset, the agent can start taking actions in the environment by using the `.step()` method. Note that the agent can only take one action per time step.
 #
@@ -59,7 +59,7 @@ initial_state = env.reset()
 # Select an action
 action = 0
 # Run a single time step of the environment's dynamics with the given action.
-next_state, reward, done, _ = env.step(action)
+next_state, reward, done, _, _ = env.step(action)
 # Display table with values. All values are displayed to 3 decimal places.
 utils.display_table(initial_state, action, next_state, reward, done)
 
@@ -189,7 +189,7 @@ target_q_network.set_weights(q_network.get_weights())
 for i in range(num_episodes):
 
     # Reset the environment to the initial state and get the initial state
-    state = env.reset()
+    state, _ = env.reset()
     total_points = 0
 
     for t in range(max_num_timesteps):
@@ -200,7 +200,7 @@ for i in range(num_episodes):
         action = utils.get_action(q_values, epsilon)
 
         # Take action A and receive reward R and the next state S'
-        next_state, reward, done, _ = env.step(action)
+        next_state, reward, done, _, _ = env.step(action)
 
         # Store experience tuple (S,A,R,S') in the memory buffer.
         # We store the done variable as well for convenience.
