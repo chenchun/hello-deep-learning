@@ -1,5 +1,6 @@
 import argparse
 import gym
+from gym.utils.save_video import save_video
 import numpy as np
 from itertools import count
 from collections import deque
@@ -22,7 +23,7 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
 args = parser.parse_args()
 
 
-env = gym.make('CartPole-v1')
+env = gym.make('CartPole-v1', render_mode="rgb_array_list")
 env.reset(seed=args.seed)
 torch.manual_seed(args.seed)
 
@@ -102,6 +103,21 @@ def main():
             print("Solved! Running reward is now {} and "
                   "the last episode runs to {} time steps!".format(running_reward, t))
             break
+    # save video
+    state, _ = env.reset()
+    step_starting_index = 0
+    episode_index = 0
+    for step_index in range(199):
+      action = select_action(state)
+      _, _, done, _, _ = env.step(action)
+      if done:
+        save_video(env.render(), "videos", fps=env.metadata["render_fps"], step_starting_index=step_starting_index,
+          episode_index=episode_index)
+        step_starting_index = step_index + 1
+        episode_index += 1
+        env.reset()
+    env.close()
+
 
 
 if __name__ == '__main__':
