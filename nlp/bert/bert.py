@@ -253,7 +253,7 @@ class BERTEmbedding(torch.nn.Module):
       sum of all these features are output of BERTEmbedding
   """
 
-  def __init__(self, vocab_size, embed_size, seq_len=64, dropout=0.1):
+  def __init__(self, vocab_size, embed_size, seq_len=64, dropout=0.1, device='cuda'):
     """
     :param vocab_size: total vocab size
     :param embed_size: embedding size of token embedding
@@ -264,8 +264,8 @@ class BERTEmbedding(torch.nn.Module):
     self.embed_size = embed_size
     # (m, seq_len) --> (m, seq_len, embed_size)
     # padding_idx is not updated during training, remains as fixed pad (0)
-    self.token = torch.nn.Embedding(vocab_size, embed_size, padding_idx=0, device='cuda')
-    self.segment = torch.nn.Embedding(3, embed_size, padding_idx=0, device='cuda')
+    self.token = torch.nn.Embedding(vocab_size, embed_size, padding_idx=0, device=device)
+    self.segment = torch.nn.Embedding(3, embed_size, padding_idx=0, device=device)
     self.position = PositionalEmbedding(d_model=embed_size, max_len=seq_len)
     self.dropout = torch.nn.Dropout(p=dropout)
 
@@ -275,15 +275,15 @@ class BERTEmbedding(torch.nn.Module):
 
 
 ### testing
-embed_layer = BERTEmbedding(vocab_size=len(tokenizer.vocab), embed_size=768, seq_len=MAX_LEN)
-embed_result = embed_layer(sample_data['bert_input'], sample_data['segment_label'])
-print(embed_result.size())
+#embed_layer = BERTEmbedding(vocab_size=len(tokenizer.vocab), embed_size=768, seq_len=MAX_LEN)
+#embed_result = embed_layer(sample_data['bert_input'], sample_data['segment_label'])
+#print(embed_result.size())
 
 
 ### attention layers
 class MultiHeadedAttention(torch.nn.Module):
 
-  def __init__(self, heads, d_model, dropout=0.1):
+  def __init__(self, heads, d_model, dropout=0.1, device='cuda'):
     super(MultiHeadedAttention, self).__init__()
 
     assert d_model % heads == 0
@@ -291,10 +291,10 @@ class MultiHeadedAttention(torch.nn.Module):
     self.heads = heads
     self.dropout = torch.nn.Dropout(dropout)
 
-    self.query = torch.nn.Linear(d_model, d_model)
-    self.key = torch.nn.Linear(d_model, d_model)
-    self.value = torch.nn.Linear(d_model, d_model)
-    self.output_linear = torch.nn.Linear(d_model, d_model)
+    self.query = torch.nn.Linear(d_model, d_model, device=device)
+    self.key = torch.nn.Linear(d_model, d_model, device=device)
+    self.value = torch.nn.Linear(d_model, d_model, device=device)
+    self.output_linear = torch.nn.Linear(d_model, d_model, device=device)
 
   def forward(self, query, key, value, mask):
     """
@@ -337,11 +337,11 @@ class MultiHeadedAttention(torch.nn.Module):
 class FeedForward(torch.nn.Module):
   "Implements FFN equation."
 
-  def __init__(self, d_model, middle_dim=2048, dropout=0.1):
+  def __init__(self, d_model, middle_dim=2048, dropout=0.1, device='cuda'):
     super(FeedForward, self).__init__()
 
-    self.fc1 = torch.nn.Linear(d_model, middle_dim)
-    self.fc2 = torch.nn.Linear(middle_dim, d_model)
+    self.fc1 = torch.nn.Linear(d_model, middle_dim, device=device)
+    self.fc2 = torch.nn.Linear(middle_dim, d_model, device=device)
     self.dropout = torch.nn.Dropout(dropout)
     self.activation = torch.nn.GELU()
 
@@ -352,11 +352,11 @@ class FeedForward(torch.nn.Module):
 
 
 class EncoderLayer(torch.nn.Module):
-  def __init__(self, d_model=768, heads=12, feed_forward_hidden=768 * 4, dropout=0.1):
+  def __init__(self, d_model=768, heads=12, feed_forward_hidden=768 * 4, dropout=0.1, device='cuda'):
     super(EncoderLayer, self).__init__()
-    self.layernorm = torch.nn.LayerNorm(d_model)
-    self.self_multihead = MultiHeadedAttention(heads, d_model)
-    self.feed_forward = FeedForward(d_model, middle_dim=feed_forward_hidden)
+    self.layernorm = torch.nn.LayerNorm(d_model, device=device)
+    self.self_multihead = MultiHeadedAttention(heads, d_model, device=device)
+    self.feed_forward = FeedForward(d_model, middle_dim=feed_forward_hidden, device=device)
     self.dropout = torch.nn.Dropout(dropout)
 
   def forward(self, embeddings, mask):
@@ -373,10 +373,10 @@ class EncoderLayer(torch.nn.Module):
 
 
 ### testing
-mask = (sample_data['bert_input'] > 0).unsqueeze(1).repeat(1, sample_data['bert_input'].size(1), 1).unsqueeze(1)
-transformer_block = EncoderLayer()
-transformer_result = transformer_block(embed_result, mask)
-transformer_result.size()
+#mask = (sample_data['bert_input'] > 0).unsqueeze(1).repeat(1, sample_data['bert_input'].size(1), 1).unsqueeze(1)
+#transformer_block = EncoderLayer()
+#transformer_result = transformer_block(embed_result, mask)
+#transformer_result.size()
 
 
 class BERT(torch.nn.Module):
@@ -384,7 +384,7 @@ class BERT(torch.nn.Module):
   BERT model : Bidirectional Encoder Representations from Transformers.
   """
 
-  def __init__(self, vocab_size, d_model=768, n_layers=12, heads=12, dropout=0.1):
+  def __init__(self, vocab_size, d_model=768, n_layers=12, heads=12, dropout=0.1, device='cuda'):
     """
     :param vocab_size: vocab_size of total words
     :param hidden: BERT model hidden size
@@ -402,11 +402,11 @@ class BERT(torch.nn.Module):
     self.feed_forward_hidden = d_model * 4
 
     # embedding for BERT, sum of positional, segment, token embeddings
-    self.embedding = BERTEmbedding(vocab_size=vocab_size, embed_size=d_model)
+    self.embedding = BERTEmbedding(vocab_size=vocab_size, embed_size=d_model, device=device)
 
     # multi-layers transformer blocks, deep network
     self.encoder_blocks = torch.nn.ModuleList(
-      [EncoderLayer(d_model, heads, d_model * 4, dropout) for _ in range(n_layers)])
+      [EncoderLayer(d_model, heads, d_model * 4, dropout, device=device) for _ in range(n_layers)])
 
   def forward(self, x, segment_info):
     # attention masking for padded token
@@ -427,12 +427,12 @@ class NextSentencePrediction(torch.nn.Module):
   2-class classification model : is_next, is_not_next
   """
 
-  def __init__(self, hidden):
+  def __init__(self, hidden, device='cuda'):
     """
     :param hidden: BERT model output size
     """
     super().__init__()
-    self.linear = torch.nn.Linear(hidden, 2)
+    self.linear = torch.nn.Linear(hidden, 2, device=device)
     self.softmax = torch.nn.LogSoftmax(dim=-1)
 
   def forward(self, x):
@@ -446,13 +446,13 @@ class MaskedLanguageModel(torch.nn.Module):
   n-class classification problem, n-class = vocab_size
   """
 
-  def __init__(self, hidden, vocab_size):
+  def __init__(self, hidden, vocab_size, device='cuda'):
     """
     :param hidden: output size of BERT model
     :param vocab_size: total vocab size
     """
     super().__init__()
-    self.linear = torch.nn.Linear(hidden, vocab_size)
+    self.linear = torch.nn.Linear(hidden, vocab_size, device=device)
     self.softmax = torch.nn.LogSoftmax(dim=-1)
 
   def forward(self, x):
@@ -465,7 +465,7 @@ class BERTLM(torch.nn.Module):
   Next Sentence Prediction Model + Masked Language Model
   """
 
-  def __init__(self, bert: BERT, vocab_size):
+  def __init__(self, bert: BERT, vocab_size, device='cuda'):
     """
     :param bert: BERT model which should be trained
     :param vocab_size: total vocab size for masked_lm
@@ -473,8 +473,8 @@ class BERTLM(torch.nn.Module):
 
     super().__init__()
     self.bert = bert
-    self.next_sentence = NextSentencePrediction(self.bert.d_model)
-    self.mask_lm = MaskedLanguageModel(self.bert.d_model, vocab_size)
+    self.next_sentence = NextSentencePrediction(self.bert.d_model, device=device)
+    self.mask_lm = MaskedLanguageModel(self.bert.d_model, vocab_size, device=device)
 
   def forward(self, x, segment_label):
     x = self.bert(x, segment_label)
@@ -482,13 +482,13 @@ class BERTLM(torch.nn.Module):
 
 
 ### test
-bert_model = BERT(len(tokenizer.vocab))
-bert_result = bert_model(sample_data['bert_input'], sample_data['segment_label'])
-print(bert_result.size())
+#bert_model = BERT(len(tokenizer.vocab))
+#bert_result = bert_model(sample_data['bert_input'], sample_data['segment_label'])
+#print(bert_result.size())
 
-bert_lm = BERTLM(bert_model, len(tokenizer.vocab))
-final_result = bert_lm(sample_data['bert_input'], sample_data['segment_label'])
-print(final_result[0].size(), final_result[1].size())
+#bert_lm = BERTLM(bert_model, len(tokenizer.vocab))
+#final_result = bert_lm(sample_data['bert_input'], sample_data['segment_label'])
+#print(final_result[0].size(), final_result[1].size())
 
 ### optimizer
 class ScheduledOptim():
@@ -527,7 +527,7 @@ class ScheduledOptim():
 ### trainer
 class BERTTrainer:
   def __init__(self, model, train_dataloader, test_dataloader=None, lr=1e-4, weight_decay=0.01, betas=(0.9, 0.999),
-    warmup_steps=10000, log_freq=2, device='cuda'):
+    warmup_steps=10000, log_freq=1, device='cuda'):
 
     self.device = device
     self.model = model
@@ -567,7 +567,6 @@ class BERTTrainer:
       data = {key: value.to(self.device) for key, value in data.items()}
 
       # 1. forward the next_sentence_prediction and masked_lm model
-      print(f"bert_input={data['bert_input'].device}, segment_label={data['segment_label'].device}")
       next_sent_output, mask_lm_output = self.model.forward(data["bert_input"], data["segment_label"])
 
       # 2-1. NLL(negative log likelihood) loss of is_next classification result
@@ -607,8 +606,8 @@ class BERTTrainer:
 
 train_data = BERTDataset(pairs, seq_len=MAX_LEN, tokenizer=tokenizer)
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True, pin_memory=True)
-bert_model = BERT(len(tokenizer.vocab))
-bert_lm = BERTLM(bert_model, len(tokenizer.vocab))
+bert_model = BERT(len(tokenizer.vocab), device='cuda')
+bert_lm = BERTLM(bert_model, len(tokenizer.vocab), device='cuda')
 bert_trainer = BERTTrainer(bert_lm, train_loader, device='cuda')
 epochs = 2
 
