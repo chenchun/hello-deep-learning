@@ -3,3 +3,9 @@
 /.idea
 *.pyc
 __pycache__
+logs
+aclImdb
+metadata.tsv
+vectors.tsv
+*.tar.gz
+*.h5
