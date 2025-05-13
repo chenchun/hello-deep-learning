@@ -15,3 +15,4 @@ vectors.tsv
 /nlp/bert/cornell movie-dialogs corpus
 /nlp/bert/bert-it-1
 /drl/lunar-lander/videos
+*.out

@@ -73,5 +73,22 @@ Device 1: NVIDIA H20
   sharedMemPerMultiprocessor: 233472
 */
 
+/*
+Device 0: Tesla T4
+  asyncEngineCount: 3
+  warpSize: 32
+  maxGridSize: [2147483647,65535,65535]
+  maxBlocksPerMultiProcessor: 16
+  maxThreadsDim: [1024,1024,64]
+  maxThreadsPerBlock: 1024
+  maxThreadsPerMultiProcessor: 1024
+  memoryBusWidth: 256
+  multiProcessorCount: 40
+  regsPerBlock: 65536
+  regsPerMultiprocessor: 65536
+  sharedMemPerBlock: 49152
+  sharedMemPerMultiprocessor: 65536
+*/
+
     return 0;
 }
