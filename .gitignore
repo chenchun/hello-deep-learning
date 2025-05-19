@@ -19,3 +19,4 @@ vectors.tsv
 *.egg-info
 cuda/pybind11/demo/build
 *.so
+build
