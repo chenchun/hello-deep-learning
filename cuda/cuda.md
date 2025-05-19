@@ -52,4 +52,38 @@ my_kernel<<<num_blocks, num_threads>>>();
 demo参考[softmax.cu](softmax.cu)
 
 
+# gridDim blockDim blockIdx ThreadIdx
+
+
+- 一个grid有多个block,一个block有多个thread.
+- grid有多大，用gridDim表示它有多少个block，具体分为gridDim.x, gridDim.y，gridDim.z。
+- block有多大，用blockDim表示它有多少个thread，具体分为blockDim.x，blockDim.y，blockDim.z。
+- 怎么表示thread在block中的相对位置呢？用 threadIdx.x,threadIdx.y,threadIdx.z表示。
+- 怎么表示block在grid中的相对位置呢？用blockIdx.x,blockIdx.y,blockIdx.z表示。
+
+线程总数：
+
+N = gridDim.x * gridDim.y * gridDim.z * blockDim.x * blockDim.y * blockDim.z
+
+通过blockIdx.x、blockIdx.y、blockIdx.z、threadIdx.x、threadIdx.y、threadIdx.z就可以完全定位一个线程的坐标位置了。具体看下面的例子：
+
+hello_from_gpu<<<1,4>>>(); 中的1和4是什么意思？它们分别表示gridSize和BlockSize，即需要1个block，每个block有4个thread
+对于一维的情况：
+block_size=128;
+
+grid_size = (N+block_size-1)/block_size;（没有设成什么值是最好的）
+
+每个block可以申请多少个线程呢？总数也是1024。如（1024，1，1）或者（512，2，1）
+grid大小没有限制。底层是以warp为单位申请。 如果blockDim为160，则正好申请5个warp。如果blockDim为161，则不得不申请6个warp。
+
+
+
+
+
+
+
+
+
+
+
 

@@ -16,3 +16,6 @@ vectors.tsv
 /nlp/bert/bert-it-1
 /drl/lunar-lander/videos
 *.out
+*.egg-info
+cuda/pybind11/demo/build
+*.so
