@@ -1,5 +1,5 @@
 import torch
-from eplb_dispatch import dispatch_tokens_to_phy_id
+from eplb_dispatch import dispatch_tokens_to_phy_id, dispatch_tokens_to_phy_id_2
 import torch.utils.benchmark as benchmark
 
 # @torch.compile(dynamic=True)
@@ -32,6 +32,8 @@ topk_ids = torch.rand(tokens, 8, device='cuda')*expert_count.shape[-1]
 topk_ids = topk_ids.to(dtype=torch.int32)
 assert dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy).allclose(
     torch_dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy))
+assert torch_dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy).allclose(
+    dispatch_tokens_to_phy_id_2(topk_weights, topk_ids, expert_count, log2phy))
 
 t0 = benchmark.Timer(
     stmt='dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy)',
@@ -44,6 +46,16 @@ t0 = benchmark.Timer(
     })
 
 t1 = benchmark.Timer(
+    stmt='dispatch_tokens_to_phy_id_2(topk_weights, topk_ids, expert_count, log2phy)',
+    setup='from eplb_dispatch import dispatch_tokens_to_phy_id_2',
+    globals={
+        'topk_weights': topk_weights,
+        'topk_ids': topk_ids,
+        'expert_count': expert_count,
+        'log2phy': log2phy,
+    })
+
+t2 = benchmark.Timer(
     stmt='torch_dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy)',
     setup='from __main__ import torch_dispatch_tokens_to_phy_id',
     globals={
@@ -55,6 +67,7 @@ t1 = benchmark.Timer(
 
 print(t0.timeit(100))
 print(t1.timeit(100))
+print(t2.timeit(100))
 
 
 results = []
@@ -95,6 +108,20 @@ for tokens in (1, 4, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 204
             label=label,
             sub_label=sub_label,
             description='dispatch_tokens_to_phy_id',
+        ).blocked_autorange(min_run_time=0.5))
+        results.append(benchmark.Timer(
+            stmt='dispatch_tokens_to_phy_id_2(topk_weights, topk_ids, expert_count, log2phy)',
+            setup='from eplb_dispatch import dispatch_tokens_to_phy_id_2',
+            globals={
+                'topk_weights': topk_weights,
+                'topk_ids': topk_ids,
+                'expert_count': expert_count,
+                'log2phy': log2phy,
+            },
+            num_threads=num_threads,
+            label=label,
+            sub_label=sub_label,
+            description='dispatch_tokens_to_phy_id_2',
         ).blocked_autorange(min_run_time=0.5))
 
 compare = benchmark.Compare(results)
