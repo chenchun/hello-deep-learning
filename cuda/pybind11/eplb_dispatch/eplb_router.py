@@ -1,10 +1,10 @@
 import torch
-from eplb_dispatch import dispatch_tokens_to_phy_id
+from eplb_dispatch import dispatch_tokens_to_phy_id, dispatch_tokens_to_phy_id_2
 
 # 输入数据（与问题中的例子相同）
 topk_weights = torch.tensor(
     [[0.0286, 0.0386, 0.0297, 0.0614, 0.0288, 0.0284],
-     [0.0438, 0.0864, 0.0343, 0.0577, 0.0627, 0.0274]], device='cuda')
+     [0.0438, 0.0864, 0.0343, 0.0577, 0.0627, 0.0274]], device='cuda', dtype=torch.float32)
 topk_ids = torch.tensor([[0, 2, 5, 4, 11, 7],
                          [5, 7, 4, 0, 9, 10]], device='cuda', dtype=torch.int32)
 log2phy = torch.tensor(
@@ -30,9 +30,17 @@ def torch_dispatch_tokens_to_phy_id(
     return topk_phy_ids
 
 # 调用CUDA函数
-output1 = dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy)
+output1 = torch_dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy)
 print(output1)
 
-output2 = torch_dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy)
+output2 = dispatch_tokens_to_phy_id(topk_weights, topk_ids, expert_count, log2phy)
 print(output2)
 
+output3 = dispatch_tokens_to_phy_id_2(topk_weights, topk_ids, expert_count, log2phy)
+print(f"float32: {output3}")
+
+topk_weights = torch.tensor(
+    [[0.0286, 0.0386, 0.0297, 0.0614, 0.0288, 0.0284],
+     [0.0438, 0.0864, 0.0343, 0.0577, 0.0627, 0.0274]], device='cuda', dtype=torch.float64)
+output4 = dispatch_tokens_to_phy_id_2(topk_weights, topk_ids, expert_count, log2phy)
+print(f"float64: {output4}")

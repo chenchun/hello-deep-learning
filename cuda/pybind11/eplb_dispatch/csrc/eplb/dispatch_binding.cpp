@@ -46,5 +46,18 @@ torch::Tensor dispatch_tokens_to_phy_id_cuda_2(
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("dispatch_tokens_to_phy_id", &dispatch_tokens_to_phy_id_cuda_wrapper, "Dispatch tokens to physical IDs (CUDA)");
     m.def("dispatch_tokens_to_phy_id_2", &dispatch_tokens_to_phy_id_cuda_2, "CUDA implementation of dispatch tokens to physical IDs");
+
 }
+
+// TORCH_LIBRARY(extension_cpp, m) {
+//     m.def("dispatch_tokens_to_phy_id(Tensor topk_weights, Tensor topk_ids, Tensor expert_count, Tensor log2phy) -> (Tensor)");
+//     m.def("dispatch_tokens_to_phy_id_2(Tensor topk_weights, Tensor topk_ids, Tensor expert_count, Tensor log2phy) -> (Tensor)");
+//  }
+
+//  TORCH_LIBRARY_IMPL(extension_cpp, CPU, m) {
+//     m.def("dispatch_tokens_to_phy_id", &dispatch_tokens_to_phy_id_cuda_wrapper, "Dispatch tokens to physical IDs (CUDA)");
+//     m.def("dispatch_tokens_to_phy_id_2", &dispatch_tokens_to_phy_id_cuda_2, "Dispatch tokens to physical IDs (CUDA)");
+// }
+
+
 

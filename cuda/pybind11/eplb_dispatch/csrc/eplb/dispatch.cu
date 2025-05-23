@@ -56,27 +56,27 @@ void dispatch_tokens_to_phy_id_cuda(
     }
 }
 
-
 __global__ void dispatch_single_col_kernel(
-    const int* topk_ids,
-    const int* log2phy,
-    int* output,
+    const int32_t* topk_ids,
+    const int32_t* log2phy,
+    int32_t* output,
     int batch_size,
     int k) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= batch_size * k) return;
     int i = idx / k;
     int j = idx % k;
-    int64_t log_id = topk_ids[i * k + j];
+    int32_t log_id = topk_ids[i * k + j];
     output[i * k + j] = log2phy[log_id];
 }
 
+template <typename scalar_t>
 __global__ void dispatch_multi_col_kernel(
-    const float* topk_weights,
-    const int* topk_ids,
-    const int* expert_count,
-    const int* log2phy,
-    int* output,
+    const scalar_t* topk_weights,
+    const int32_t* topk_ids,
+    const int32_t* expert_count,
+    const int32_t* log2phy,
+    int32_t* output,
     int log2phy_cols,
     int batch_size,
     int k) {
@@ -85,11 +85,11 @@ __global__ void dispatch_multi_col_kernel(
     int i = idx / k;
     int j = idx % k;
 
-    int log_id = topk_ids[i * k + j];
-    int count = expert_count[log_id];
-    float weight = topk_weights[i * k + j];
-    int scaled = static_cast<int>(weight * 10000.0f);
-    int selected = scaled % count;
+    int32_t log_id = topk_ids[i * k + j];
+    int32_t count = expert_count[log_id];
+    scalar_t weight = topk_weights[i * k + j];
+    int32_t scaled = static_cast<int32_t>(weight * 10000.0f);
+    int32_t selected = scaled % count;
 
     output[i * k + j] = log2phy[log_id * log2phy_cols + selected];
 }
@@ -115,21 +115,24 @@ torch::Tensor dispatch_tokens_to_phy_id_cuda_2(
 
     if (log2phy_cols == 1) {
         dispatch_single_col_kernel<<<blocks, threads, 0, stream>>>(
-            topk_ids.data_ptr<int>(),
-            log2phy.data_ptr<int>(),
-            output.data_ptr<int>(),
+            topk_ids.data_ptr<int32_t>(),
+            log2phy.data_ptr<int32_t>(),
+            output.data_ptr<int32_t>(),
             batch_size,
             k);
     } else {
-        dispatch_multi_col_kernel<<<blocks, threads, 0, stream>>>(
-            topk_weights.data_ptr<float>(),
-            topk_ids.data_ptr<int>(),
-            expert_count.data_ptr<int>(),
-            log2phy.data_ptr<int>(),
-            output.data_ptr<int>(),
-            log2phy_cols,
-            batch_size,
-            k);
+        // reference https://docs.pytorch.org/tutorials/advanced/cpp_extension.html
+        AT_DISPATCH_FLOATING_TYPES(topk_weights.scalar_type(), "dispatch_multi_col_kernel_", ([&]{
+            dispatch_multi_col_kernel<scalar_t><<<blocks, threads, 0, stream>>>(
+                topk_weights.data_ptr<scalar_t>(),
+                topk_ids.data_ptr<int32_t>(),
+                expert_count.data_ptr<int32_t>(),
+                log2phy.data_ptr<int32_t>(),
+                output.data_ptr<int32_t>(),
+                log2phy_cols,
+                batch_size,
+                k);
+        }));
     }
 
     return output;
