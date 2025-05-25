@@ -115,9 +115,9 @@ torch::Tensor dispatch_tokens_to_phy_id_cuda_2(
 
     if (log2phy_cols == 1) {
         dispatch_single_col_kernel<<<blocks, threads, 0, stream>>>(
-            topk_ids.data_ptr<int32_t>(),
-            log2phy.data_ptr<int32_t>(),
-            output.data_ptr<int32_t>(),
+            reinterpret_cast<int32_t*>(topk_ids.data_ptr()),
+            reinterpret_cast<int32_t*>(log2phy.data_ptr()),
+            reinterpret_cast<int32_t*>(output.data_ptr()),
             batch_size,
             k);
     } else {
@@ -125,10 +125,10 @@ torch::Tensor dispatch_tokens_to_phy_id_cuda_2(
         AT_DISPATCH_FLOATING_TYPES(topk_weights.scalar_type(), "dispatch_multi_col_kernel_", ([&]{
             dispatch_multi_col_kernel<scalar_t><<<blocks, threads, 0, stream>>>(
                 topk_weights.data_ptr<scalar_t>(),
-                topk_ids.data_ptr<int32_t>(),
-                expert_count.data_ptr<int32_t>(),
-                log2phy.data_ptr<int32_t>(),
-                output.data_ptr<int32_t>(),
+                reinterpret_cast<int32_t*>(topk_ids.data_ptr()),
+                reinterpret_cast<int32_t*>(expert_count.data_ptr()),
+                reinterpret_cast<int32_t*>(log2phy.data_ptr()),
+                reinterpret_cast<int32_t*>(output.data_ptr()),
                 log2phy_cols,
                 batch_size,
                 k);
